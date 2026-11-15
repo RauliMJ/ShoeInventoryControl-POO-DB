@@ -1,6 +1,5 @@
 ﻿
 using ShoeInventoryControl_POO_DB.Models;
-using ShoeInventoryControl_POO_DB.Models;
 using ShoeInventoryControl_POO_DB.Services;
 
 namespace ShoeInventoryControl_POO_DB.UI;
@@ -65,7 +64,7 @@ public class ConsoleMenu
             Console.WriteLine("2. Buscar calzado");
             Console.WriteLine("3. Modificar calzado");
             Console.WriteLine("4. Eliminar calzado");
-            Console.WriteLine("5. Listar calzados");
+            Console.WriteLine("5. Lista de calzados");
             Console.WriteLine("0. Volver al menú principal");
 
             int option = ReadInt("Seleccione una opción: ");
@@ -111,7 +110,7 @@ public class ConsoleMenu
         {
             Console.WriteLine("\n=== GESTIÓN DE MARCAS ===");
             Console.WriteLine("1. Registrar marca");
-            Console.WriteLine("2. Listar marcas");
+            Console.WriteLine("2. Lista de marcas");
             Console.WriteLine("0. Volver al menú principal");
 
             int option = ReadInt("Seleccione una opción: ");
@@ -145,7 +144,7 @@ public class ConsoleMenu
         {
             Console.WriteLine("\n=== GESTIÓN DE TALLAS ===");
             Console.WriteLine("1. Registrar talla");
-            Console.WriteLine("2. Listar tallas");
+            Console.WriteLine("2. Lista de tallas");
             Console.WriteLine("0. Volver al menú principal");
 
             int option = ReadInt("Seleccione una opción: ");
@@ -177,12 +176,13 @@ public class ConsoleMenu
 
         Brand brand = _inventoryService.AddBrand(name);
 
-        Console.WriteLine($"\nMarca registrada correctamente. ID: {brand.Id}");
+        Console.WriteLine(
+            $"\nMarca registrada correctamente. ID: {brand.Id}");
     }
 
     private void ListBrands()
     {
-        IReadOnlyList<Brand> brands = _inventoryService.GetAllBrands();
+        List<Brand> brands = _inventoryService.GetAllBrands();
 
         if (brands.Count == 0)
         {
@@ -204,12 +204,13 @@ public class ConsoleMenu
 
         Size size = _inventoryService.AddSize(number);
 
-        Console.WriteLine($"\nTalla registrada correctamente. ID: {size.Id}");
+        Console.WriteLine(
+            $"\nTalla registrada correctamente. ID: {size.Id}");
     }
 
     private void ListSizes()
     {
-        IReadOnlyList<Size> sizes = _inventoryService.GetAllSizes();
+        List<Size> sizes = _inventoryService.GetAllSizes();
 
         if (sizes.Count == 0)
         {
@@ -246,7 +247,8 @@ public class ConsoleMenu
             stock
         );
 
-        Console.WriteLine($"\nCalzado registrado correctamente. ID: {shoe.Id}");
+        Console.WriteLine(
+            $"\nCalzado registrado correctamente. ID: {shoe.Id}");
     }
 
     private void SearchShoe()
@@ -262,14 +264,21 @@ public class ConsoleMenu
             case 1:
                 int id = ReadInt("ID del calzado: ");
 
-                Shoe shoe = _inventoryService.GetShoeById(id);
+                Shoe? shoe = _inventoryService.GetShoeById(id);
+
+                if (shoe is null)
+                {
+                    Console.WriteLine("\nNo se encontró el calzado.");
+                    return;
+                }
+
                 DisplayShoe(shoe);
                 break;
 
             case 2:
                 string model = ReadText("Modelo a buscar: ");
 
-                IReadOnlyList<Shoe> results =
+                List<Shoe> results =
                     _inventoryService.SearchShoesByModel(model);
 
                 if (results.Count == 0)
@@ -282,6 +291,7 @@ public class ConsoleMenu
                 {
                     DisplayShoe(result);
                 }
+
                 break;
 
             default:
@@ -294,7 +304,13 @@ public class ConsoleMenu
     {
         int id = ReadInt("ID del calzado que desea modificar: ");
 
-        Shoe existingShoe = _inventoryService.GetShoeById(id);
+        Shoe? existingShoe = _inventoryService.GetShoeById(id);
+
+        if (existingShoe is null)
+        {
+            Console.WriteLine("\nNo se encontró el calzado.");
+            return;
+        }
 
         Console.WriteLine("\nIngrese los nuevos datos:");
 
@@ -309,14 +325,20 @@ public class ConsoleMenu
         decimal price = ReadDecimal("Nuevo precio: ");
         int stock = ReadInt("Nuevas existencias: ");
 
-        Shoe updatedShoe = _inventoryService.UpdateShoe(
-            existingShoe.Id,
+        Shoe? updatedShoe = _inventoryService.UpdateShoe(
+            id,
             model,
             brandId,
             sizeId,
             price,
             stock
         );
+
+        if (updatedShoe is null)
+        {
+            Console.WriteLine("\nNo se pudo encontrar el calzado para modificar.");
+            return;
+        }
 
         Console.WriteLine("\nCalzado modificado correctamente.");
         DisplayShoe(updatedShoe);
@@ -326,7 +348,13 @@ public class ConsoleMenu
     {
         int id = ReadInt("ID del calzado que desea eliminar: ");
 
-        Shoe shoe = _inventoryService.GetShoeById(id);
+        Shoe? shoe = _inventoryService.GetShoeById(id);
+
+        if (shoe is null)
+        {
+            Console.WriteLine("\nNo se encontró el calzado.");
+            return;
+        }
 
         DisplayShoe(shoe);
 
@@ -335,8 +363,16 @@ public class ConsoleMenu
 
         if (confirmation.Equals("S", StringComparison.OrdinalIgnoreCase))
         {
-            _inventoryService.DeleteShoe(id);
-            Console.WriteLine("\nCalzado eliminado correctamente.");
+            bool deleted = _inventoryService.DeleteShoe(id);
+
+            if (deleted)
+            {
+                Console.WriteLine("\nCalzado eliminado correctamente.");
+            }
+            else
+            {
+                Console.WriteLine("\nNo se pudo eliminar el calzado.");
+            }
         }
         else
         {
@@ -346,7 +382,7 @@ public class ConsoleMenu
 
     private void ListShoes()
     {
-        IReadOnlyList<Shoe> shoes = _inventoryService.GetAllShoes();
+        List<Shoe> shoes = _inventoryService.GetAllShoes();
 
         if (shoes.Count == 0)
         {
@@ -369,42 +405,40 @@ public class ConsoleMenu
         Console.WriteLine($"Modelo: {shoe.Model}");
         Console.WriteLine($"Marca: {shoe.Brand.Name}");
         Console.WriteLine($"Talla: {shoe.Size.Number}");
-        Console.WriteLine($"Precio: {shoe.Price}");
+        Console.WriteLine($"Precio: ${shoe.Price:F2}");
         Console.WriteLine($"Existencias: {shoe.Stock}");
         Console.WriteLine("------------------------------");
     }
 
     private int ReadInt(string message)
     {
-        int value;
-
         while (true)
         {
             Console.Write(message);
 
-            if (int.TryParse(Console.ReadLine(), out value))
+            if (int.TryParse(Console.ReadLine(), out int value))
             {
                 return value;
             }
 
-            Console.WriteLine("Entrada no válida. Introduzca un número entero.");
+            Console.WriteLine(
+                "Entrada no válida. Introduzca un número entero.");
         }
     }
 
     private decimal ReadDecimal(string message)
     {
-        decimal value;
-
         while (true)
         {
             Console.Write(message);
 
-            if (decimal.TryParse(Console.ReadLine(), out value))
+            if (decimal.TryParse(Console.ReadLine(), out decimal value))
             {
                 return value;
             }
 
-            Console.WriteLine("Entrada no válida. Introduzca un número válido.");
+            Console.WriteLine(
+                "Entrada no válida. Introduzca un número válido.");
         }
     }
 
